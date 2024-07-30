@@ -44,6 +44,13 @@ public class Account implements UserDetails, Serializable {
     private Boolean credentialsNonExpired;
     @Column(name = "enabled")
     private Boolean enabled;
+    @Column(name = "wallet_key")
+    private String walletKey;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinTable(name = "tb_account_wallet", joinColumns = {@JoinColumn(name = "id_account")},
+            inverseJoinColumns = @JoinColumn(name = "id_wallet"))
+    private Wallet wallet;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "tb_account_permission", joinColumns = {@JoinColumn(name = "id_account")},

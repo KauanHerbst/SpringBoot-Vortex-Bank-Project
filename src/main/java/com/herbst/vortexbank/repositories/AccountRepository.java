@@ -9,6 +9,8 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     Account findByCPF(String CPF);
     Account findByNameAndEmailAndCPF(String name, String email, String CPF);
     Account findByName(String name);
+    Account findByEmail(String email);
+    Account findByTelephone(String telephone);
     Boolean existsByNameAndEmailAndCPF(String name, String email, String CPF);
     Boolean existsByEmail(String email);
     Boolean existsByCPF(String CPF);

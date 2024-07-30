@@ -14,8 +14,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
-@JsonPropertyOrder({"id", "name", "email", "CPF", "dateOfBirth", "telephone", "permissions", "accountNonExpired",
-        "accountNonLocked", "credentialsNonExpired", "enabled"})
+@JsonPropertyOrder({"id", "name", "email", "cpf", "dateOfBirth", "telephone", "permissions", "walletKey",
+        "accountNonExpired", "accountNonLocked", "credentialsNonExpired", "enabled"})
 public class AccountDTO extends RepresentationModel<AccountDTO> {
     @JsonProperty("id")
     private Long accountId;
@@ -30,4 +30,5 @@ public class AccountDTO extends RepresentationModel<AccountDTO> {
     private Boolean credentialsNonExpired;
     private Boolean enabled;
     private List<Permission> permissions;
+    private String walletKey;
 }
