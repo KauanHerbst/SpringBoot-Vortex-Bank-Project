@@ -2,9 +2,11 @@ package com.herbst.vortexbank.v1.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.herbst.vortexbank.exceptions.EntityNotFoundException;
 import com.herbst.vortexbank.v1.dtos.*;
 import com.herbst.vortexbank.v1.services.AccountService;
 import com.herbst.vortexbank.v1.services.AuthService;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -98,46 +100,35 @@ public class AccountControllerTest {
         dto.setCPF("999999991");
         dto.setPassword("123456");
 
-        when(accountService.createAccountPassword(dto)).thenReturn(true);
+        StandardResponseDTO responseDTO = new StandardResponseDTO();
+        responseDTO.setStatus(202);
+        responseDTO.setMessage("Password Created");
+
+        when(accountService.createAccountPassword(dto)).thenReturn(responseDTO);
 
         mockMvc.perform(post("/v1/account/password")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(new ObjectMapper().writeValueAsString(dto)))
                         .andExpect(MockMvcResultMatchers.status().isAccepted())
+                        .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(responseDTO.getMessage()))
+                        .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(responseDTO.getStatus()))
                                 .andReturn();
 
         verify(accountService).createAccountPassword(dto);
     }
 
-    @Test
-    public void createAccountPassword_NotFound() throws Exception {
-        CreateAccountPasswordDTO dto = new CreateAccountPasswordDTO();
-        dto.setName("Test");
-        dto.setEmail("test@gmail.com");
-        dto.setCPF("999999991");
-        dto.setPassword("123456");
-
-        when(accountService.createAccountPassword(dto)).thenReturn(false);
-
-        mockMvc.perform(post("/v1/account/password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(new ObjectMapper().writeValueAsString(dto)))
-                .andExpect(MockMvcResultMatchers.status().isNotFound())
-                .andReturn();
-
-        verify(accountService).createAccountPassword(dto);
-    }
 
     @Test
     public void signIn_Success() throws Exception{
         AccountSignInDTO dto = new AccountSignInDTO();
-        dto.setCPF("9999991");
+        dto.setCPF("99999999991");
         dto.setPassword("123456");
 
         Date now = new Date();
 
         TokenDTO tokenDTO = new TokenDTO();
         tokenDTO.setName("Test");
+        tokenDTO.setId(1L);
         tokenDTO.setAuthenticated(true);
         tokenDTO.setAccessToken("accessToken");
         tokenDTO.setRefreshToken("refreshToken");
@@ -168,11 +159,17 @@ public class AccountControllerTest {
         dto.setPassword("123456");
         dto.setNewPassword("654321");
 
-        when(accountService.changeAccountPassword(dto)).thenReturn(true);
+        StandardResponseDTO responseDTO = new StandardResponseDTO();
+        responseDTO.setStatus(202);
+        responseDTO.setMessage("Password Changed");
+
+        when(accountService.changeAccountPassword(dto)).thenReturn(responseDTO);
 
         mockMvc.perform(post("/v1/account/newpassword")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(new ObjectMapper().writeValueAsString(dto)))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(responseDTO.getMessage()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(responseDTO.getStatus()))
                 .andExpect(MockMvcResultMatchers.status().isAccepted())
                 .andReturn();
 
@@ -188,14 +185,42 @@ public class AccountControllerTest {
         dto.setPassword("123456");
         dto.setNewPassword("654321");
 
-        when(accountService.changeAccountPassword(dto)).thenReturn(false);
+        StandardResponseDTO responseDTO = new StandardResponseDTO();
+        responseDTO.setStatus(404);
+        responseDTO.setMessage("Password Not Changed");
+
+        when(accountService.changeAccountPassword(dto)).thenReturn(responseDTO);
 
         mockMvc.perform(post("/v1/account/newpassword")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(new ObjectMapper().writeValueAsString(dto)))
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(responseDTO.getMessage()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(responseDTO.getStatus()))
                 .andReturn();
 
         verify(accountService).changeAccountPassword(dto);
+    }
+
+    @Test
+    public void searchAccountForTransaction_Success() throws Exception {
+        AccountAddresseeDTO dto = new AccountAddresseeDTO();
+        dto.setKeySearch("test@gmail.com");
+
+        AccountTransactionDTO accountTransactionDTO = new AccountTransactionDTO();
+        accountTransactionDTO.setAccountId(1L);
+        accountTransactionDTO.setName("Test");
+
+        when(accountService.searchAccountForTransaction(dto)).thenReturn(accountTransactionDTO);
+
+        mockMvc.perform(post("/v1/account/search")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(dto)))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.name").value(accountTransactionDTO.getName()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.accountId").value(accountTransactionDTO.getAccountId()))
+                .andReturn();
+
+        verify(accountService).searchAccountForTransaction(dto);
     }
 }

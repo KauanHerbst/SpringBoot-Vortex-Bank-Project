@@ -4,8 +4,7 @@ import com.herbst.vortexbank.entities.Account;
 import com.herbst.vortexbank.exceptions.AccountIsActiveException;
 import com.herbst.vortexbank.exceptions.EntityNotFoundException;
 import com.herbst.vortexbank.repositories.AccountRepository;
-import com.herbst.vortexbank.v1.dtos.ChangeAccountPasswordDTO;
-import com.herbst.vortexbank.v1.dtos.CreateAccountPasswordDTO;
+import com.herbst.vortexbank.v1.dtos.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,9 +55,10 @@ public class AccountServiceTest {
         when(accountRepository.findByCPF(dto.getCPF())).thenReturn(account);
         when(passwordEncoder.encode(dto.getPassword())).thenReturn("encodePassword");
 
-        boolean result = accountService.createAccountPassword(dto);
+        StandardResponseDTO resultDTO = accountService.createAccountPassword(dto);
 
-        Assertions.assertTrue(result);
+        Assertions.assertEquals(202, resultDTO.getStatus());
+        Assertions.assertEquals("Password Created", resultDTO.getMessage());
         verify(accountRepository).save(account);
 
     }
@@ -132,8 +132,10 @@ public class AccountServiceTest {
         when(passwordEncoder.matches(dto.getPassword(), account.getPassword())).thenReturn(true);
         when(passwordEncoder.encode(dto.getNewPassword())).thenReturn("encodePassword");
 
-        boolean result = accountService.changeAccountPassword(dto);
-        Assertions.assertTrue(result);
+        StandardResponseDTO resultDTO = accountService.changeAccountPassword(dto);
+
+        Assertions.assertEquals(202, resultDTO.getStatus());
+        Assertions.assertEquals("Password Changed", resultDTO.getMessage());
         verify(accountRepository, times(1)).save(account);
     }
 
@@ -228,5 +230,115 @@ public class AccountServiceTest {
           accountService.loadUserByNameAndCPFAndEmail(name, CPF, email);
         });
         verify(accountRepository, times(1)).findByNameAndEmailAndCPF(name, email, CPF);
+    }
+
+    @Test
+    public void searchAccountForTransaction_SearchByEmail_AccountExists(){
+        String emailForSearch = "test@gmail.com";
+
+        Account account = new Account();
+        account.setId(1L);
+        account.setEnabled(true);
+        account.setName("Test");
+        account.setEmail(emailForSearch);
+
+        AccountAddresseeDTO accountAddresseeDTO = new AccountAddresseeDTO();
+        accountAddresseeDTO.setKeySearch(emailForSearch);
+
+        when(accountRepository.findByEmail(emailForSearch)).thenReturn(account);
+
+        AccountTransactionDTO dtoReturn = accountService.searchAccountForTransaction(accountAddresseeDTO);
+
+        Assertions.assertEquals(account.getName(), dtoReturn.getName());
+        Assertions.assertEquals(account.getId(), dtoReturn.getAccountId());
+
+    }
+
+    @Test
+    public void searchAccountForTransaction_SearchByEmail_AccountDoesNotExists(){
+        String emailForSearch = "test@gmail.com";
+
+        AccountAddresseeDTO accountAddresseeDTO = new AccountAddresseeDTO();
+        accountAddresseeDTO.setKeySearch(emailForSearch);
+
+        when(accountRepository.findByEmail(emailForSearch)).thenReturn(null);
+
+        Assertions.assertThrows(EntityNotFoundException.class, () -> {
+            accountService.searchAccountForTransaction(accountAddresseeDTO);
+        });
+        verify(accountRepository, times(1)).findByEmail(emailForSearch);
+    }
+
+    @Test
+    public void searchAccountForTransaction_SearchByCPF_AccountExists(){
+        String cpfForSearch = "11111111111";
+
+        Account account = new Account();
+        account.setId(1L);
+        account.setEnabled(true);
+        account.setName("Test");
+        account.setCPF(cpfForSearch);
+
+        AccountAddresseeDTO accountAddresseeDTO = new AccountAddresseeDTO();
+        accountAddresseeDTO.setKeySearch(cpfForSearch);
+
+        when(accountRepository.findByCPF(cpfForSearch)).thenReturn(account);
+
+        AccountTransactionDTO dtoReturn = accountService.searchAccountForTransaction(accountAddresseeDTO);
+
+        Assertions.assertEquals(account.getName(), dtoReturn.getName());
+        Assertions.assertEquals(account.getId(), dtoReturn.getAccountId());
+
+    }
+
+    @Test
+    public void searchAccountForTransaction_SearchByCPF_AccountDoesNotExists(){
+        String cpfForSearch = "11111111111";
+
+        AccountAddresseeDTO accountAddresseeDTO = new AccountAddresseeDTO();
+        accountAddresseeDTO.setKeySearch(cpfForSearch);
+
+        when(accountRepository.findByCPF(cpfForSearch)).thenReturn(null);
+
+        Assertions.assertThrows(EntityNotFoundException.class, () -> {
+            accountService.searchAccountForTransaction(accountAddresseeDTO);
+        });
+        verify(accountRepository, times(1)).findByCPF(cpfForSearch);
+    }
+
+    @Test
+    public void searchAccountForTransaction_SearchByTelephone_AccountExists(){
+        String telephoneForSearch = "999999991";
+
+        Account account = new Account();
+        account.setId(1L);
+        account.setEnabled(true);
+        account.setName("Test");
+        account.setTelephone(telephoneForSearch);
+
+        AccountAddresseeDTO accountAddresseeDTO = new AccountAddresseeDTO();
+        accountAddresseeDTO.setKeySearch(telephoneForSearch);
+
+        when(accountRepository.findByTelephone(telephoneForSearch)).thenReturn(account);
+
+        AccountTransactionDTO dtoReturn = accountService.searchAccountForTransaction(accountAddresseeDTO);
+
+        Assertions.assertEquals(account.getName(), dtoReturn.getName());
+        Assertions.assertEquals(account.getId(), dtoReturn.getAccountId());
+    }
+
+    @Test
+    public void searchAccountForTransaction_SearchByTelephone_AccountDoesNotExists(){
+        String telephoneForSearch = "999999991";
+
+        AccountAddresseeDTO accountAddresseeDTO = new AccountAddresseeDTO();
+        accountAddresseeDTO.setKeySearch(telephoneForSearch);
+
+        when(accountRepository.findByTelephone(telephoneForSearch)).thenReturn(null);
+
+        Assertions.assertThrows(EntityNotFoundException.class, () -> {
+            accountService.searchAccountForTransaction(accountAddresseeDTO);
+        });
+        verify(accountRepository, times(1)).findByTelephone(telephoneForSearch);
     }
 }
