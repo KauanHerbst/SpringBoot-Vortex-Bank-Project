@@ -1,7 +1,9 @@
 package com.herbst.vortexbank.mapper;
 
 import com.herbst.vortexbank.entities.Account;
+import com.herbst.vortexbank.entities.Wallet;
 import com.herbst.vortexbank.v1.dtos.AccountDTO;
+import com.herbst.vortexbank.v1.dtos.WalletDTO;
 import org.modelmapper.ModelMapper;
 
 import java.util.List;
@@ -13,6 +15,9 @@ public class MapperObject {
     static{
         modelMapper.createTypeMap(Account.class, AccountDTO.class).addMapping(Account::getId, AccountDTO::setAccountId);
         modelMapper.createTypeMap(AccountDTO.class, Account.class).addMapping(AccountDTO::getAccountId, Account::setId);
+        modelMapper.createTypeMap(Wallet.class, WalletDTO.class).addMapping(Wallet::getId, WalletDTO::setWalletId);
+        modelMapper.createTypeMap(WalletDTO.class, Wallet.class).addMapping(WalletDTO::getWalletId, Wallet::setId);
+
     }
 
     public static<O, D> D objectValue(O origin, Class<D> destination){

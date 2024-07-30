@@ -37,6 +37,9 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/v1/account/newpassword").authenticated()
+                        .requestMatchers("/v1/account/search").authenticated()
+                        .requestMatchers("/v1/wallet/password").authenticated()
+                        .requestMatchers("/v1/wallet/transaction").authenticated()
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(customFilter, UsernamePasswordAuthenticationFilter.class)

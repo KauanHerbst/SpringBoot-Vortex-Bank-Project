@@ -12,6 +12,7 @@ import java.util.Date;
 @EqualsAndHashCode
 public class TokenDTO implements Serializable {
     private String name;
+    private Long id;
     private Date created;
     private Date expiration;
     private Boolean authenticated;

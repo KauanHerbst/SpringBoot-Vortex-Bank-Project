@@ -41,12 +41,12 @@ public class TokenProvider {
         algorithm = Algorithm.HMAC256(secretKey.getBytes());
     }
 
-    public TokenDTO createAccessToken(String name, String CPF, String email, List<String> permissions){
+    public TokenDTO createAccessToken(String name, Long id, String CPF, String email, List<String> permissions){
         Date now = new Date();
         Date validity = new Date(now.getTime() + validityInMilliSeconds);
-        String accessToken = getAccessToken(name, CPF, email, permissions ,now, validity);
-        String refreshToken = getRefreshToken(name, CPF, email, permissions, now);
-        return new TokenDTO(name, now, validity, true, accessToken, refreshToken);
+        String accessToken = getAccessToken(name, id, CPF, email, permissions ,now, validity);
+        String refreshToken = getRefreshToken(name, id, CPF, email, permissions, now);
+        return new TokenDTO(name, id, now, validity, true, accessToken, refreshToken);
     }
 
     public TokenDTO refreshToken(String refreshToken){
@@ -56,8 +56,9 @@ public class TokenProvider {
         String email = decodedJWT.getSubject();
         String name = decodedJWT.getClaim("name").asString();
         String CPF = decodedJWT.getClaim("CPF").asString();
+        Long id = decodedJWT.getClaim("id").asLong();
         List<String> permissions = decodedJWT.getClaim("permissions").asList(String.class);
-        return createAccessToken(name, CPF, email, permissions);
+        return createAccessToken(name, id, CPF, email, permissions);
 
     }
 
@@ -70,7 +71,7 @@ public class TokenProvider {
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
     }
 
-    public String getAccessToken(String name, String CPF, String email, List<String> permissions, Date now, Date validity){
+    public String getAccessToken(String name, Long id, String CPF, String email, List<String> permissions, Date now, Date validity){
         String issuesUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
         String[] permissionsArray = permissions.toArray(new String[0]);
         return JWT.create()
@@ -79,13 +80,14 @@ public class TokenProvider {
                 .withSubject(email)
                 .withClaim("CPF",CPF)
                 .withClaim("name",name)
+                .withClaim("id",id)
                 .withArrayClaim("permissions", permissionsArray)
                 .withIssuer(issuesUrl)
                 .sign(algorithm)
                 .strip();
     }
 
-    public String getRefreshToken(String name, String CPF, String email, List<String> permissions, Date now){
+    public String getRefreshToken(String name, Long id, String CPF, String email, List<String> permissions, Date now){
         String issuesUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
         Date validity = new Date(now.getTime() + validityInMilliSeconds * 2);
         String[] permissionsArray = permissions.toArray(new String[0]);
@@ -95,6 +97,7 @@ public class TokenProvider {
                 .withSubject(email)
                 .withClaim("CPF",CPF)
                 .withClaim("name",name)
+                .withClaim("id",id)
                 .withArrayClaim("permissions", permissionsArray)
                 .withIssuer(issuesUrl)
                 .sign(algorithm)

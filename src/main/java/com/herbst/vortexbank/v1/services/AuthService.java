@@ -2,12 +2,16 @@ package com.herbst.vortexbank.v1.services;
 
 import com.herbst.vortexbank.entities.Account;
 import com.herbst.vortexbank.entities.Permission;
+import com.herbst.vortexbank.entities.Wallet;
 import com.herbst.vortexbank.exceptions.AccountAlreadyCreatedWithCPFException;
 import com.herbst.vortexbank.exceptions.AccountAlreadyCreatedWithEmailException;
 import com.herbst.vortexbank.exceptions.EntityNotFoundException;
 import com.herbst.vortexbank.mapper.MapperObject;
 import com.herbst.vortexbank.repositories.AccountRepository;
 import com.herbst.vortexbank.repositories.PermissionReporitory;
+import com.herbst.vortexbank.repositories.WalletRepository;
+import com.herbst.vortexbank.security.cryptography.CryptographyAES;
+import com.herbst.vortexbank.security.cryptography.SecretKeyGeneratorAES;
 import com.herbst.vortexbank.security.jwt.TokenProvider;
 import com.herbst.vortexbank.v1.dtos.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +32,9 @@ public class AuthService {
     private AccountRepository accountRepository;
 
     @Autowired
+    private WalletRepository walletRepository;
+
+    @Autowired
     private AuthenticationManager authenticationManager;
 
     @Autowired
@@ -39,10 +46,14 @@ public class AuthService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    public AccountDTO create(CreateAccountDTO accountDataDTO) {
+    @Autowired
+    private CryptographyAES crypt;
+
+    public AccountDTO create(CreateAccountDTO accountDataDTO) throws Exception {
         if (accountRepository.existsByEmail(accountDataDTO.getEmail()))
             throw new AccountAlreadyCreatedWithEmailException();
         if (accountRepository.existsByCPF(accountDataDTO.getCPF())) throw new AccountAlreadyCreatedWithCPFException();
+
         Account accountData = MapperObject.objectValue(accountDataDTO, Account.class);
         accountData.setAccountNonLocked(true);
         accountData.setAccountNonExpired(true);
@@ -50,8 +61,24 @@ public class AuthService {
         accountData.setEnabled(false);
         Date now = new Date();
         accountData.setAccountCreatedAt(now);
+
+        String walletKey = SecretKeyGeneratorAES.generateKey();
+        String encryptedWalletKey = crypt.encrypt(walletKey);
+        accountData.setWalletKey(encryptedWalletKey);
+
         Optional<Permission> permissionOptional = permissionReporitory.findById(1L);
         accountData.getPermissions().add(permissionOptional.get());
+
+        Wallet wallet = new Wallet();
+        wallet.setBalance(10D);
+        wallet.setAccount(accountData);
+        wallet.setEnabled(false);
+        wallet.setWalletNonLocked(true);
+        wallet.setWalletCreatedAt(now);
+        wallet.setWalletKey(walletKey);
+        wallet.setAccount(accountData);
+        accountData.setWallet(wallet);
+
         accountRepository.save(accountData);
         return MapperObject.objectValue(accountData, AccountDTO.class);
     }
@@ -65,10 +92,11 @@ public class AuthService {
             String name = account.getName();
             String accountPassword = account.getPassword();
             String email = account.getEmail();
+            Long accountId = account.getId();
             List<String> permissions = account.getPermissionsAccount();
             if(!passwordEncoder.matches(password, accountPassword)) throw new BadCredentialsException("Invalid Password");
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(name, password));
-            return tokenProvider.createAccessToken(name, CPF, email, permissions);
+            return tokenProvider.createAccessToken(name, accountId, CPF, email, permissions);
         }catch (Exception e){
             throw new BadCredentialsException("Invalid Credentials");
         }
