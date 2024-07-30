@@ -52,12 +52,13 @@ public class TokenProviderTest {
         String name = "Test";
         String CPF = "9999991";
         String email = "test@gmail.com";
+        Long id = 1L;
         List<String> permissions = new ArrayList<>();
         permissions.add("ACCOUNT");
         Date now = new Date();
         Date validity = new Date(now.getTime() + validityInMilliSeconds);
 
-        String accessToken = tokenProvider.getAccessToken(name, CPF, email, permissions, now, validity);
+        String accessToken = tokenProvider.getAccessToken(name, id, CPF, email, permissions, now, validity);
         System.out.println(accessToken);
 
         Assertions.assertNotNull(accessToken);
@@ -68,11 +69,12 @@ public class TokenProviderTest {
         String name = "Test";
         String CPF = "9999991";
         String email = "test@gmail.com";
+        Long id = 1L;
         List<String> permissions = new ArrayList<>();
         permissions.add("ACCOUNT");
         Date now = new Date();
 
-        String refreshToken = tokenProvider.getRefreshToken(name, CPF, email, permissions, now);
+        String refreshToken = tokenProvider.getRefreshToken(name, id, CPF, email, permissions, now);
         System.out.println(refreshToken);
 
         Assertions.assertNotNull(refreshToken);
@@ -83,10 +85,11 @@ public class TokenProviderTest {
         String name = "Test";
         String CPF = "9999991";
         String email = "test@gmail.com";
+        Long id = 1L;
         List<String> permissions = new ArrayList<>();
         permissions.add("ACCOUNT");
 
-        TokenDTO tokenDTO = tokenProvider.createAccessToken(name, CPF, email, permissions);
+        TokenDTO tokenDTO = tokenProvider.createAccessToken(name, id, CPF, email, permissions);
 
         Assertions.assertNotNull(tokenDTO);
         Assertions.assertEquals(name, tokenDTO.getName());
@@ -101,11 +104,12 @@ public class TokenProviderTest {
         String name = "Test";
         String CPF = "9999991";
         String email = "test@gmail.com";
+        Long id = 1L;
         List<String> permissions = new ArrayList<>();
         permissions.add("ACCOUNT");
         Date now = new Date();
 
-        String tokenTest = tokenProvider.getRefreshToken(name, CPF, email, permissions, now);
+        String tokenTest = tokenProvider.getRefreshToken(name, id, CPF, email, permissions, now);
 
         TokenDTO tokenDTO = tokenProvider.refreshToken(tokenTest);
 
@@ -122,11 +126,12 @@ public class TokenProviderTest {
         String name = "Test";
         String CPF = "9999991";
         String email = "test@gmail.com";
+        Long id = 1L;
         List<String> permissions = new ArrayList<>();
         permissions.add("ACCOUNT");
         Date now = new Date();
 
-        String tokenTest = tokenProvider.getRefreshToken(name, CPF, email, permissions, now);
+        String tokenTest = tokenProvider.getRefreshToken(name, id, CPF, email, permissions, now);
 
         Boolean result = tokenProvider.validateToken(tokenTest);
         Assertions.assertTrue(result);
@@ -137,12 +142,13 @@ public class TokenProviderTest {
         String name = "Test";
         String CPF = "9999991";
         String email = "test@gmail.com";
+        Long id = 1L;
         List<String> permissions = new ArrayList<>();
         permissions.add("ACCOUNT");
         Date now = new Date();
         Date validity = new Date(now.getTime() + 1);
 
-        String invalidToken = tokenProvider.getAccessToken(name, CPF, email, permissions, now, validity);
+        String invalidToken = tokenProvider.getAccessToken(name, id, CPF, email, permissions, now, validity);
         Boolean result = tokenProvider.validateToken(invalidToken);
         Assertions.assertFalse(result);
     }
@@ -152,6 +158,7 @@ public class TokenProviderTest {
         String name = "Test";
         String CPF = "9999991";
         String email = "test@gmail.com";
+        Long id = 1L;
         List<String> permissions = new ArrayList<>();
         permissions.add("ACCOUNT");
         Date now = new Date();
@@ -159,7 +166,7 @@ public class TokenProviderTest {
 
         Account account = new Account();
         account.setEnabled(true);
-        account.setId(1L);
+        account.setId(id);
         account.setEmail(email);
         account.setCPF(CPF);
         account.setAccountNonExpired(true);
@@ -169,7 +176,7 @@ public class TokenProviderTest {
         account.getPermissionsAccount().add("ACCOUNT");
 
         when(accountRepository.findByNameAndEmailAndCPF(name, email, CPF)).thenReturn(account);
-        String tokenTest = tokenProvider.getAccessToken(name, CPF, email, permissions, now, validity);
+        String tokenTest = tokenProvider.getAccessToken(name, id, CPF, email, permissions, now, validity);
         Authentication auth = tokenProvider.getAuthentication(tokenTest);
         verify(accountRepository, times(1)).findByNameAndEmailAndCPF(name, email, CPF);
 

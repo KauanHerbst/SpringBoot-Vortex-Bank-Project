@@ -7,6 +7,7 @@ import com.herbst.vortexbank.exceptions.AccountAlreadyCreatedWithEmailException;
 import com.herbst.vortexbank.exceptions.EntityNotFoundException;
 import com.herbst.vortexbank.repositories.AccountRepository;
 import com.herbst.vortexbank.repositories.PermissionReporitory;
+import com.herbst.vortexbank.security.cryptography.CryptographyAES;
 import com.herbst.vortexbank.security.jwt.TokenProvider;
 import com.herbst.vortexbank.v1.dtos.*;
 import org.junit.jupiter.api.Assertions;
@@ -38,7 +39,8 @@ public class AuthServiceTest {
 
     @Mock
     private PermissionReporitory permissionReporitory;
-
+    @Mock
+    private CryptographyAES crypt;
     @Mock
     private PasswordEncoder passwordEncoder;
     @InjectMocks
@@ -50,7 +52,7 @@ public class AuthServiceTest {
     }
 
     @Test
-    public void createAccount_Success(){
+    public void createAccount_Success() throws Exception {
         CreateAccountDTO dto = new CreateAccountDTO();
         dto.setName("Test");
         dto.setEmail("test@gmail.com");
@@ -65,6 +67,7 @@ public class AuthServiceTest {
         when(accountRepository.existsByEmail(dto.getEmail())).thenReturn(false);
         when(accountRepository.existsByCPF(dto.getCPF())).thenReturn(false);
         when(permissionReporitory.findById(1L)).thenReturn(Optional.of(permissionAccount));
+        when(crypt.encrypt(anyString())).thenReturn("encryptedWalletKey");
 
         AccountDTO accountResultDTO = authService.create(dto);
 
@@ -143,14 +146,14 @@ public class AuthServiceTest {
         when(accountRepository.existsByCPF(dto.getCPF())).thenReturn(true);
         when(accountRepository.findByCPF(dto.getCPF())).thenReturn(account);
         when(passwordEncoder.matches(account.getPassword(), dto.getPassword())).thenReturn(true);
-        when(tokenProvider.createAccessToken(account.getName(), account.getCPF(), account.getEmail(),
+        when(tokenProvider.createAccessToken(account.getName(), account.getId(), account.getCPF(), account.getEmail(),
                 account.getPermissionsAccount())).thenReturn(tokenDTO);
 
         TokenDTO tokenResultDTO = authService.signin(dto);
 
         verify(authenticationManager, times(1)).authenticate(any(UsernamePasswordAuthenticationToken.class));
-        verify(tokenProvider, times(1)).createAccessToken(account.getName(), account.getCPF(),
-                account.getEmail(), account.getPermissionsAccount());
+        verify(tokenProvider, times(1)).createAccessToken(account.getName(), account.getId(),
+                account.getCPF(), account.getEmail(), account.getPermissionsAccount());
 
         Assertions.assertEquals(account.getName(), tokenResultDTO.getName());
         Assertions.assertEquals("accessToken", tokenResultDTO.getAccessToken());
