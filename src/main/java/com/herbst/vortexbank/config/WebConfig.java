@@ -31,5 +31,4 @@ public class WebConfig implements WebMvcConfigurer {
                         .mediaType("x-yaml", MEDIA_TYPE_APPLICATION_YML)
         );
     }
-
 }

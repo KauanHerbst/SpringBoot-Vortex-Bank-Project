@@ -1,6 +1,5 @@
 package com.herbst.vortexbank.v1.services;
 
-import com.herbst.vortexbank.VortexbankApplication;
 import com.herbst.vortexbank.entities.Account;
 import com.herbst.vortexbank.entities.Transaction;
 import com.herbst.vortexbank.entities.TransactionFailed;
@@ -12,11 +11,10 @@ import com.herbst.vortexbank.repositories.TransactionFailedRepository;
 import com.herbst.vortexbank.repositories.TransactionRepository;
 import com.herbst.vortexbank.repositories.WalletRepository;
 import com.herbst.vortexbank.security.cryptography.CryptographyAES;
+import com.herbst.vortexbank.util.NotificationTypeEnum;
 import com.herbst.vortexbank.util.TransactionStatusEnum;
 import com.herbst.vortexbank.util.TransactionTypeEnum;
 import com.herbst.vortexbank.v1.dtos.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -25,11 +23,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.Date;
-import java.util.Optional;
 
 @Service
 public class WalletService {
-    private static final Logger log = LoggerFactory.getLogger(WalletService.class);
     @Autowired
     private WalletRepository walletRepository;
 
@@ -48,6 +44,8 @@ public class WalletService {
     @Autowired
     private TransactionFailedRepository transactionFailedRepository;
 
+    @Autowired
+    private NotificationService notificationService;
 
     public StandardResponseDTO createWalletPassword(CreateWalletPasswordDTO data){
         if(data.getWalletKey().isBlank()) throw new InvalidWalletKeyException();
@@ -147,6 +145,15 @@ public class WalletService {
             transactionRepository.save(transactionFailed);
             throw e;
         }
+
+        notificationService.createNotification("Reembolso realizado com sucesso!",
+                "Parabéns, seu reembolso foi aprovado e em breve o saldo será adicionado na sua carteira",
+                NotificationTypeEnum.TRANSACTION, accountResquetedRefund);
+        notificationService.createNotification("Saldo reembolsado!", "O saldo de uma transação foi reembolsado da sua carteira",
+                NotificationTypeEnum.TRANSACTION, accountRefunded);
+        notificationService.notifyAccount(accountResquetedRefund.getId());
+        notificationService.notifyAccount(accountRefunded.getId());
+
         return CustomMapperTransaction.mapperObject(transaction);
     }
 
@@ -175,6 +182,11 @@ public class WalletService {
             throw e;
         }
 
+        String messageNotification = "Um Saque no valor de R$: " + transaction.getAmount() + " foi realizado";
+        notificationService.createNotification("Saque realizado!", messageNotification,
+                NotificationTypeEnum.TRANSACTION, accountOrigin);
+        notificationService.notifyAccount(accountOrigin.getId());
+
         return CustomMapperTransaction.mapperObject(transaction);
     }
 
@@ -200,6 +212,11 @@ public class WalletService {
             TransactionFailed transactionFailed = createTransactionFailed(accountOrigin, transactionReceivedDTO, e, TransactionTypeEnum.DEPOSIT);
             transactionFailedRepository.save(transactionFailed);
         }
+
+        String messageNotification = "Um deposito no valor de R$: " + transaction.getAmount() + " foi adicionado na sua carteira";
+        notificationService.createNotification("Deposito realizado!", messageNotification,
+                NotificationTypeEnum.TRANSACTION, accountOrigin);
+        notificationService.notifyAccount(accountOrigin.getId());
 
         return CustomMapperTransaction.mapperObject(transaction);
     }
@@ -234,6 +251,19 @@ public class WalletService {
           transactionRepository.save(transactionFailed);
             throw e;
         }
+
+        String messageOrigin = "Você realizou uma transferencia no valor de R$: " + transaction.getAmount() + ", para " + accountAddressee.getName();
+
+        notificationService.createNotification("Transferencia realizado com sucesso!",
+                messageOrigin, NotificationTypeEnum.TRANSACTION, accountOrigin);
+        notificationService.notifyAccount(accountOrigin.getId());
+
+        String messageAddressee = accountOrigin.getName() + " enviou R$: " + transaction.getAmount() + " para sua carteira";
+
+        notificationService.createNotification("Transferencia recebida!",
+                messageAddressee, NotificationTypeEnum.TRANSACTION, accountAddressee);
+        notificationService.notifyAccount(accountAddressee.getId());
+
         return CustomMapperTransaction.mapperObject(transaction);
     }
 
@@ -263,6 +293,19 @@ public class WalletService {
             transactionRepository.save(transactionFailed);
             throw e;
         }
+
+        String messageOrigin = "Você realizou uma cobrança no valor de R$: " + transaction.getAmount() + ", para " + accountCharged.getName();
+
+        notificationService.createNotification("Cobrança realizado com sucesso!",
+                messageOrigin, NotificationTypeEnum.TRANSACTION, accountCharged);
+        notificationService.notifyAccount(accountCharged.getId());
+
+        String messageAddressee = "Você recebeu uma cobrança no valor de R$: " + transaction.getAmount() + ", enviada por " + accountCharging.getName();
+
+        notificationService.createNotification("Cobrança recebida!",
+                messageAddressee, NotificationTypeEnum.TRANSACTION, accountCharged);
+        notificationService.notifyAccount(accountCharged.getId());
+
         return CustomMapperTransaction.mapperObject(transaction);
     }
 
@@ -307,6 +350,18 @@ public class WalletService {
             transactionFailedRepository.save(transactionFailed);
             throw e;
         }
+
+        String messageOrigin = "Você realizou um pagamento no valor de R$: " + transaction.getAmount() + ", para " + accountCharged.getName();
+
+        notificationService.createNotification("Pagamento realizado com sucesso!",
+                messageOrigin, NotificationTypeEnum.TRANSACTION, accountCharged);
+        notificationService.notifyAccount(accountCharged.getId());
+
+        String messageAddressee = "Você recebeu uma cobrança no valor de R$: " + transaction.getAmount() + ", enviada por " + accountCharging.getName();
+
+        notificationService.createNotification("Pagamento recebido!",
+                messageAddressee, NotificationTypeEnum.TRANSACTION, accountCharged);
+        notificationService.notifyAccount(accountCharged.getId());
 
         return CustomMapperTransaction.mapperObject(transaction);
     }

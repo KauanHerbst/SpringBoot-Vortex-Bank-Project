@@ -47,6 +47,9 @@ public class Account implements UserDetails, Serializable {
     @Column(name = "wallet_key")
     private String walletKey;
 
+    @OneToMany(mappedBy = "account", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    private List<Notification> notifications = new ArrayList<>();
+
     @OneToOne(cascade = CascadeType.ALL)
     @JoinTable(name = "tb_account_wallet", joinColumns = {@JoinColumn(name = "id_account")},
             inverseJoinColumns = @JoinColumn(name = "id_wallet"))
